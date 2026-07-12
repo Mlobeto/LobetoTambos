@@ -11,7 +11,7 @@ export const siteConfig = {
     defaultMessage:
       'Hola, quiero consultar sobre Lobeto Tambos y sus servicios de gestión.',
   },
-  email: 'contacto@lobetotambos.com',
+  email: 'equipos.lecheros.lobeto@gmail.com',
   location: 'Lincoln (B), Argentina',
   heritage: {
     title: 'Tradición que permanece',

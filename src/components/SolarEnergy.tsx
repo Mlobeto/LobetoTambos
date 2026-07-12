@@ -8,8 +8,8 @@ export function SolarEnergy() {
   return (
     <BackgroundImage
       src={siteImages.energiaSolar}
-      alt=""
-      overlayClassName="bg-lobeto-navy/88"
+      alt="Paneles solares en un tambo"
+      overlayClassName="bg-gradient-to-r from-lobeto-navy/92 via-lobeto-navy/78 to-lobeto-navy/45"
       className="text-white"
     >
       <section id="energia-solar" className="py-20">

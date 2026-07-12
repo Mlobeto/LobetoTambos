@@ -12,22 +12,20 @@ type BackgroundImageProps = {
 export function BackgroundImage({
   src,
   alt = '',
-  overlayClassName = 'bg-lobeto-navy/75',
+  overlayClassName = 'bg-lobeto-navy/70',
   className = '',
   children,
 }: BackgroundImageProps) {
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      <img
-        src={src}
-        alt={alt}
-        className="absolute inset-0 h-full w-full object-cover"
-        onError={(event) => {
-          event.currentTarget.style.display = 'none'
-        }}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url("${src}")` }}
+        role="img"
+        aria-label={alt || undefined}
       />
       <div
-        className={`absolute inset-0 bg-gradient-to-br from-brand-100 via-white to-brand-50 ${overlayClassName}`}
+        className={`absolute inset-0 ${overlayClassName}`}
         aria-hidden="true"
       />
       <div className="relative">{children}</div>
@@ -52,7 +50,7 @@ export function ImagePanel({
 }: ImagePanelProps) {
   return (
     <figure className={`relative overflow-hidden rounded-2xl border border-brand-200 shadow-lg ${className}`}>
-      <div className="aspect-[4/3] bg-gradient-to-br from-brand-100 to-brand-200">
+      <div className="relative aspect-[4/3] bg-gradient-to-br from-brand-100 to-brand-200">
         <img
           src={src}
           alt={alt}
