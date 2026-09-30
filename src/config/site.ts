@@ -7,7 +7,7 @@ export const siteConfig = {
     'Pero hay algo que permanece: el compromiso de estar cuando un tambo nos necesita.',
   ],
   whatsapp: {
-    phone: '5492355517802',
+    phone: '5492355570569',
     defaultMessage:
       'Hola, quiero consultar sobre Lobeto Tambos y sus servicios de gestión.',
   },
