@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import logo from '../assets/logo.png'
 import { siteConfig } from '../config/site'
 
@@ -10,10 +11,21 @@ const navLinks = [
 ]
 
 export function Header() {
+  const taps = useRef<number[]>([])
+
+  function handleLogoClick() {
+    const now = Date.now()
+    taps.current = [...taps.current.filter((time) => now - time < 5000), now]
+    if (taps.current.length >= 5) {
+      taps.current = []
+      window.location.assign('/gestion')
+    }
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-brand-200/60 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <a href="#inicio" className="flex items-center">
+        <a href="#inicio" className="flex items-center" onClick={handleLogoClick}>
           <img
             src={logo}
             alt={siteConfig.name}

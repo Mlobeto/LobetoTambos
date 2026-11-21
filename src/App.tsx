@@ -7,8 +7,10 @@ import { Hero } from './components/Hero'
 import { Services } from './components/Services'
 import { SolarEnergy } from './components/SolarEnergy'
 import { WhatsAppButton } from './components/WhatsAppButton'
+import { StockApp } from './stock/StockApp'
 
 function App() {
+  if (window.location.pathname === '/gestion') return <StockApp />
   return (
     <div className="min-h-screen bg-white text-brand-900">
       <Header />

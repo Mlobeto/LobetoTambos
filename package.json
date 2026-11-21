@@ -5,13 +5,30 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node --env-file-if-exists=.env.local server\\index.js",
+    "migrate": "node --env-file-if-exists=.env.local server\\migrate.js",
+    "test": "node --env-file-if-exists=.env.local --test server\\stock.test.js",
+    "test:api": "node --experimental-strip-types --test src\\stock\\api.test.js src\\stock\\articleSearch.test.js",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "connect-pg-simple": "^10.0.0",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "multer": "^2.0.2",
+    "pdfjs-dist": "^6.2.108",
+    "pg": "^8.16.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
+  },
+  "overrides": {
+    "exceljs": { "uuid": "^11.1.1" }
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
