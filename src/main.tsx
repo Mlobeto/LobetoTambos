@@ -3,6 +3,13 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
+if (window.location.pathname === '/gestion') {
+  const manifest = document.createElement('link')
+  manifest.rel = 'manifest'
+  manifest.href = '/gestion.webmanifest'
+  document.head.appendChild(manifest)
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

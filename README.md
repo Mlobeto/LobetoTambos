@@ -18,6 +18,10 @@ Instalar las dependencias con `npm install` y crear las tablas con `npm run migr
 
 Al actualizar una instalación anterior, detener el servidor antes de ejecutar `npm run migrate` y reiniciarlo después. La migración conserva saldos y remitos cuando cada producto y proveedor identifica un único artículo; si existen vínculos ambiguos, se detiene sin cambiar los datos para que puedan revisarse.
 
+## Instalar gestión en la computadora
+
+En Chrome o Edge, abrir la dirección de `/gestion` publicada con HTTPS y elegir la opción **Instalar aplicación** en la barra de direcciones o en el menú del navegador. La gestión se abre en una ventana propia; el navegador puede ofrecer crear un acceso directo en el escritorio. Para utilizarla siguen siendo necesarios internet y el inicio de sesión.
+
 Ejecutar `npm test` con conexión a la base configurada para probar los movimientos en un esquema temporal aislado. `npm run test:api` verifica el manejo de errores de conexión; `npm run build` y `npm run lint` verifican el frontend.
 
 ## Neon y Render
