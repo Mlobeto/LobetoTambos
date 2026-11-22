@@ -60,6 +60,7 @@ test('autenticación, reemplazo de lista y remitos por proveedor', async () => {
     await database.query('BEGIN')
     await database.query(migration)
     await database.query(await readFile(new URL('./migrations/003_shelf_stock.sql', import.meta.url), 'utf8'))
+    await database.query(await readFile(new URL('./migrations/004_archived_items.sql', import.meta.url), 'utf8'))
     await database.query('COMMIT')
     assert.equal((await database.query('SELECT own_code FROM stock_supplier_items WHERE id=$1', [legacyItem.id])).rows[0].own_code, 'LT-ANT')
     assert.equal((await database.query('SELECT quantity FROM stock_item_balances WHERE item_id=$1', [legacyItem.id])).rows[0].quantity, '4.000')
@@ -137,6 +138,25 @@ test('autenticación, reemplazo de lista y remitos por proveedor', async () => {
     assert.equal(data.shelf_entries.length, 2)
     assert.equal((await request(`/notes/${data.notes[0].id}`)).data.lines.length, 3)
     assert.equal((await request(`/notes/${legacyNote.id}`)).data.lines[0].supplier_code, 'ANT')
+
+    assert.equal(data.archive_supported, true)
+    assert.equal(data.items.find((i) => i.id === other.id).archived, false)
+    assert.equal((await request('/import/confirm', 'POST', { supplier_id: a.id, rows: [{ code: '0002', name: 'Otro' }], archive_ids: [other.id] })).status, 400)
+    assert.equal((await request('/import/confirm', 'POST', { supplier_id: a.id, rows: [], archive_ids: [third.id] })).status, 400)
+    assert.equal((await request('/import/confirm', 'POST', { supplier_id: a.id, rows: [], archive_ids: [other.id] })).status, 200)
+    data = (await request('/data')).data
+    assert.equal(data.items.find((i) => i.id === other.id).archived, true)
+    assert.equal(data.items.find((i) => i.id === item.id).archived, false)
+    assert.equal(data.items.find((i) => i.id === third.id).archived, false)
+    assert.equal(data.balances.find((balance) => balance.item_id === other.id).quantity, '8.000')
+    assert.equal(data.notes.length, 4)
+    assert.equal((await request('/import/confirm', 'POST', { supplier_id: a.id, rows: [{ code: '0002', name: 'Otro actualizado' }] })).status, 200)
+    assert.equal((await request('/data')).data.items.find((i) => i.id === other.id).archived, false)
+    assert.equal((await request('/import/confirm', 'POST', { supplier_id: a.id, rows: [], archive_ids: [other.id] })).status, 200)
+    assert.equal((await request(`/items/${other.id}/reactivate`, 'PUT')).data.archived, false)
+    assert.equal((await request(`/items/${other.id}/archive`, 'PUT')).data.archived, true)
+    assert.equal((await request(`/items/${other.id}/reactivate`, 'PUT')).data.archived, false)
+    assert.equal((await request('/items/999999999/archive', 'PUT')).status, 404)
   } finally {
     if (server && server.exitCode === null) {
       server.kill()

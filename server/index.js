@@ -81,14 +81,14 @@ app.get('/api/data', endpoint(async (_req, res) => {
     pool.query('SELECT * FROM stock_suppliers ORDER BY name'),
     pool.query('SELECT * FROM stock_categories ORDER BY name'),
     pool.query('SELECT p.*, c.name AS category FROM stock_products p LEFT JOIN stock_categories c ON c.id=p.category_id ORDER BY p.name'),
-    pool.query('SELECT i.*, s.name AS supplier FROM stock_supplier_items i JOIN stock_suppliers s ON s.id=i.supplier_id ORDER BY i.name'),
+    pool.query('SELECT i.*, i.archived, s.name AS supplier FROM stock_supplier_items i JOIN stock_suppliers s ON s.id=i.supplier_id ORDER BY i.name'),
     pool.query('SELECT * FROM stock_item_balances'),
     pool.query('SELECT * FROM stock_notes ORDER BY id DESC LIMIT 100'),
     pool.query(`SELECT e.id, e.item_id, e.quantity, e.stock_after, e.created_at, i.name, i.code, s.name AS supplier
       FROM stock_shelf_entries e JOIN stock_supplier_items i ON i.id=e.item_id
       JOIN stock_suppliers s ON s.id=i.supplier_id ORDER BY e.id DESC LIMIT 30`),
   ])
-  res.json({ suppliers: suppliers.rows, categories: categories.rows, products: products.rows, items: items.rows, balances: balances.rows, notes: notes.rows, shelf_entries: shelfEntries.rows })
+  res.json({ suppliers: suppliers.rows, categories: categories.rows, products: products.rows, items: items.rows, balances: balances.rows, notes: notes.rows, shelf_entries: shelfEntries.rows, archive_supported: true })
 }))
 for (const [route, table] of [['suppliers', 'stock_suppliers'], ['categories', 'stock_categories']]) {
   app.post(`/api/${route}`, endpoint(async (req, res) => {
@@ -130,6 +130,16 @@ app.put('/api/items/:id/own-code', endpoint(async (req, res) => {
   if (!result.rowCount) return res.status(404).json({ error: 'Artículo no encontrado.' })
   res.json(result.rows[0])
 }))
+app.put('/api/items/:id/reactivate', endpoint(async (req, res) => {
+  const result = await pool.query('UPDATE stock_supplier_items SET archived=false WHERE id=$1 RETURNING *', [id(req.params.id)])
+  if (!result.rowCount) return res.status(404).json({ error: 'Artículo no encontrado.' })
+  res.json(result.rows[0])
+}))
+app.put('/api/items/:id/archive', endpoint(async (req, res) => {
+  const result = await pool.query('UPDATE stock_supplier_items SET archived=true WHERE id=$1 RETURNING *', [id(req.params.id)])
+  if (!result.rowCount) return res.status(404).json({ error: 'Artículo no encontrado.' })
+  res.json(result.rows[0])
+}))
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 } })
 app.post('/api/import/read', upload.single('file'), endpoint(async (req, res) => {
   if (!req.file) throw new Error('Seleccioná un archivo.')
@@ -139,7 +149,11 @@ app.post('/api/import/read', upload.single('file'), endpoint(async (req, res) =>
 }))
 app.post('/api/import/confirm', endpoint(async (req, res) => {
   const supplierId = id(req.body.supplier_id)
-  if (!Array.isArray(req.body.rows) || !req.body.rows.length || req.body.rows.length > 20000) throw new Error('Lista de artículos inválida.')
+  const archiveIds = req.body.archive_ids === undefined ? [] : req.body.archive_ids
+  if (!Array.isArray(archiveIds) || archiveIds.length > 20000) throw new Error('Lista de artículos a archivar inválida.')
+  const ids = archiveIds.map(id)
+  if (new Set(ids).size !== ids.length) throw new Error('Hay artículos repetidos para archivar.')
+  if (!Array.isArray(req.body.rows) || req.body.rows.length > 20000 || (!req.body.rows.length && !ids.length)) throw new Error('Lista de artículos inválida.')
   const rows = req.body.rows.map((row) => ({ code: text(row.code, 'Código'), name: text(row.name, 'Nombre') }))
   const codes = new Set()
   for (const row of rows) {
@@ -147,12 +161,18 @@ app.post('/api/import/confirm', endpoint(async (req, res) => {
     codes.add(row.code)
   }
   await transaction(async (client) => {
+    if (ids.length) {
+      const archived = await client.query('SELECT id, code FROM stock_supplier_items WHERE supplier_id=$1 AND id=ANY($2::integer[]) FOR UPDATE', [supplierId, ids])
+      if (archived.rowCount !== ids.length) throw new Error('Algún artículo a archivar no pertenece al proveedor o ya no existe.')
+      if (archived.rows.some((item) => codes.has(item.code))) throw new Error('Un artículo no puede importarse y archivarse a la vez.')
+      await client.query('UPDATE stock_supplier_items SET archived=true WHERE supplier_id=$1 AND id=ANY($2::integer[])', [supplierId, ids])
+    }
     for (const row of rows) {
       await client.query(`INSERT INTO stock_supplier_items(supplier_id,code,name)
-        VALUES ($1,$2,$3) ON CONFLICT(supplier_id,code) DO UPDATE SET name=EXCLUDED.name`, [supplierId, row.code, row.name])
+        VALUES ($1,$2,$3) ON CONFLICT(supplier_id,code) DO UPDATE SET name=EXCLUDED.name, archived=false`, [supplierId, row.code, row.name])
     }
   })
-  res.json({ count: rows.length })
+  res.json({ count: rows.length, archived: ids.length })
 }))
 app.post('/api/shelf-entries', endpoint(async (req, res) => {
   const itemId = id(req.body.item_id)
